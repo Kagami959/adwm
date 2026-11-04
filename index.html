@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acoustic–Duration Watermarking</title>
+    <script src="data.js"></script>
+    <style>
+        :root {
+            --blue: #2563eb;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --muted: #64748b;
+            --ok: #16a34a;
+            --warn: #d97706;
+            --border: #e2e8f0;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .container { max-width: 1080px; margin: 0 auto; padding: 24px 20px 60px; }
+        header { text-align: center; padding: 28px 0 10px; }
+        header h1 { font-size: 1.7rem; margin: 0 0 6px; }
+        header p { color: var(--muted); margin: 4px 0; font-size: 0.95rem; }
+        .badge {
+            display: inline-block; background: #eef2ff; color: var(--blue);
+            border: 1px solid #c7d2fe; border-radius: 999px;
+            padding: 3px 14px; font-size: 0.82rem; margin-top: 6px;
+        }
+        .card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 18px 20px; margin: 18px 0;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+        }
+        .card h2 { margin: 0 0 10px; font-size: 1.15rem; }
+        .card .sub { color: var(--muted); font-size: 0.9rem; margin: 0 0 12px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle; }
+        th { background: #f1f5f9; font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+        td { font-size: 0.92rem; }
+        audio { width: 160px; height: 34px; vertical-align: middle; }
+        .msg { font-family: "SF Mono", Consolas, "Courier New", monospace; font-size: 1.05rem; letter-spacing: 1px; }
+        .crc-ok { color: var(--ok); font-weight: 600; }
+        .crc-fail { color: var(--warn); font-weight: 600; }
+        .prob { font-weight: 600; }
+        .note { color: var(--muted); font-size: 0.85rem; margin-top: 12px; }
+        .steps { display: flex; gap: 14px; flex-wrap: wrap; }
+        .step {
+            flex: 1; min-width: 220px; background: #f8fafc; border: 1px solid var(--border);
+            border-radius: 10px; padding: 14px 16px;
+        }
+        .step .num {
+            display: inline-block; width: 26px; height: 26px; line-height: 26px;
+            background: var(--blue); color: #fff; border-radius: 50%;
+            text-align: center; font-size: 0.85rem; font-weight: 700; margin-right: 8px;
+        }
+        .step p { margin: 8px 0 0; font-size: 0.9rem; }
+        code { background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 0.88em; }
+        footer { text-align: center; color: var(--muted); font-size: 0.82rem; margin-top: 30px; }
+        @media (max-width: 760px) {
+            table { display: block; overflow-x: auto; white-space: nowrap; }
+            audio { width: 130px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Acoustic–Duration Watermarking</h1>
+        <p>One message, carried by syllable timing and codec residuals.</p>
+        <span class="badge">Shared 8-bit payload · Complementary recovery · CRC-8 check</span>
+    </header>
+
+    <div class="card">
+        <h2>How it works</h2>
+        <div class="steps">
+            <div class="step">
+                <span class="num">1</span><b>Embed</b>
+                <p>The same 8-bit message <code>P</code> is embedded into the
+                syllable-duration structure (mod-4) <b>and</b> the codec acoustic residuals
+                (as <code>[CRC8(P) | P]</code>, 16 bits).</p>
+            </div>
+            <div class="step">
+                <span class="num">2</span><b>Attack</b>
+                <p>Different speech regeneration paths can retain different watermark cues.
+                Syllable durations and codec residuals offer complementary recovery paths.</p>
+            </div>
+            <div class="step">
+                <span class="num">3</span><b>Decode</b>
+                <p>The receiver checks the acoustic candidate using CRC-8 and a watermark-presence score.
+                If those checks fail, it evaluates the duration candidate using extraction validity and confidence.</p>
+            </div>
+        </div>
+        <p class="note">
+            This page demonstrates the <em>residual-domain</em> step (VoiceMark-compatible,
+            transcript-free). The complementary duration-domain carrier is applied at TTS
+            synthesis time and is exercised in the paper&rsquo;s full evaluation.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Listen &amp; compare</h2>
+        <p class="sub">Each row: original host audio vs. watermarked audio, with the embedded
+        message and the decoder&rsquo;s recovered message.</p>
+        <table id="tbl">
+            <thead>
+                <tr>
+                    <th>Sample</th>
+                    <th>Original</th>
+                    <th>Watermarked</th>
+                    <th>Embedded P</th>
+                    <th>Recovered P</th>
+                    <th>CRC</th>
+                    <th>Presence</th>
+                    <th>SNR</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <p class="note">Presence is the mean frame-level watermark score from the residual
+        detector; SNR is measured between original and watermarked audio. All samples are
+        16 kHz mono. Samples 5–10 use <a href="https://www.openslr.org/12/">LibriSpeech</a>
+        dev-clean recordings (Vassil Panayotov et al., <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>).
+        The original clips were converted to WAV and paired with their watermarked versions.</p>
+    </div>
+
+    <div class="card">
+        <h2>Try it yourself (local)</h2>
+        <p class="sub">Embed your own message into any of these host files, or run the
+        interactive Gradio demo from the <a href="https://github.com/Kagami959/Duomark">original project code</a>.</p>
+        <p class="note" style="font-size:0.9rem;">
+            <code>python app.py</code> &nbsp;→&nbsp; open the printed local URL.<br>
+            Upload an audio → pick a message label → <b>Add Watermark</b> → download →
+            resynthesize with CosyVoice2 / F5-TTS / MaskGCT (Step 2) → re-upload → <b>Decode</b>.
+        </p>
+    </div>
+
+    <footer>
+        Companion demo for <i>Speech Watermark Recovery under Unknown Regeneration Paths</i>
+    </footer>
+</div>
+
+<script>
+    const tbl = document.querySelector("#tbl tbody");
+    const fmtP = (msg) => {
+        const dec = parseInt(msg, 2);
+        return `<span class="msg">${msg.slice(0,4)}&nbsp;${msg.slice(4)}</span> <span style="color:var(--muted);font-size:0.8em">(${dec})</span>`;
+    };
+    data_list.forEach((r) => {
+        const recovered = r.crc_wmd ? `<span class="crc-ok">✓</span>` : `<span class="crc-fail">✗</span>`;
+        const presence = r.prob_wmd > 0.7 ? `<span class="crc-ok">${r.prob_wmd.toFixed(3)}</span>`
+                        : `<span style="color:var(--warn)">${r.prob_wmd.toFixed(3)}</span>`;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><b>${r.name}</b></td>
+            <td><audio controls preload="none" src="${r.origin}"></audio></td>
+            <td><audio controls preload="none" src="${r.wmd}"></audio></td>
+            <td>${fmtP(r.message)}</td>
+            <td>${fmtP(r.recovered_message)}</td>
+            <td>${recovered}</td>
+            <td class="prob">${presence}</td>
+            <td>${r.snr.toFixed(1)} dB</td>`;
+        tbl.appendChild(tr);
+    });
+</script>
+</body>
+</html>
