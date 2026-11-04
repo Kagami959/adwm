@@ -78,7 +78,7 @@
     </header>
 
     <div class="card">
-        <h2>How it works</h2>
+        <h2>How the paper method works</h2>
         <div class="steps">
             <div class="step">
                 <span class="num">1</span><b>Embed</b>
@@ -98,9 +98,10 @@
             </div>
         </div>
         <p class="note">
-            This page demonstrates the <em>residual-domain</em> step (VoiceMark-compatible,
-            transcript-free). The complementary duration-domain carrier is applied at TTS
-            synthesis time and is exercised in the paper&rsquo;s full evaluation.
+            The listening samples below illustrate <strong>acoustic embedding only</strong>.
+            They use the VoiceMark checkpoint to embed and decode the checksum-augmented payload.
+            The paper additionally embeds the payload in syllable durations during TTS synthesis
+            and uses a jointly fine-tuned acoustic detector with duration fallback.
         </p>
     </div>
 
@@ -123,8 +124,9 @@
             </thead>
             <tbody></tbody>
         </table>
-        <p class="note">Presence is the mean frame-level watermark score from the residual
-        detector; SNR is measured between original and watermarked audio. All samples are
+        <p class="note">Presence is the mean of the demo detector's frame-level watermark scores (0–1).
+        CRC indicates whether the decoded payload and checksum agree.
+        SNR is measured between original and watermarked audio. All samples are
         16 kHz mono. Samples 5–10 use <a href="https://www.openslr.org/12/">LibriSpeech</a>
         dev-clean recordings (Vassil Panayotov et al., <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>).
         The original clips were converted to WAV and paired with their watermarked versions.</p>
